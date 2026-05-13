@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TextEscape - Den låsta skolan</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #e5e7eb;
+      color: #0f172a;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .game {
+      width: 100%;
+      max-width: 1050px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border: 2px solid #cbd5e1;
+      border-radius: 18px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+      padding: 22px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .icon {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      font-size: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 21px;
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.55;
+      margin: 0 0 18px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 15px 16px;
+      background: #0f172a;
+      color: white;
+      font-size: 16px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #334155;
+    }
+
+    .side {
+      display: grid;
+      gap: 16px;
+    }
+
+    .item, .note, .test {
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      font-size: 16px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .note {
+      background: #ecfeff;
+      border-color: #67e8f9;
+      font-weight: 600;
+    }
+
+    .empty {
+      color: #475569;
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .code-box {
+      background: #fffbeb;
+      border: 2px solid #fbbf24;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .code-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input {
+      width: 150px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px solid #0f172a;
+      font-size: 28px;
+      letter-spacing: 12px;
+      font-weight: bold;
+      color: #0f172a;
+      background: white;
+    }
+
+    .small-button {
+      background: white;
+      color: #0f172a;
+      border: 2px solid #0f172a;
+      text-align: center;
+      padding: 10px 12px;
+    }
+
+    .small-button:hover {
+      background: #f1f5f9;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .pass {
+      color: #15803d;
+      font-weight: bold;
+    }
+
+    .fail {
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    @media (max-width: 850px) {
+      .game {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <main class="game">
+      <section class="card">
+        <div class="title-row">
+          <span class="icon" id="sceneIcon">🔒</span>
+          <h1 id="sceneTitle">TextEscape</h1>
+        </div>
+        <p id="sceneText"></p>
+        <div id="codeBox"></div>
+        <div class="choices" id="choices"></div>
+      </section>
+
+      <aside class="side">
+        <section class="card">
+          <h2>🎒 Saker</h2>
+          <div id="inventory"></div>
+        </section>
+
+        <section class="card">
+          <h2>🧩 Ledtrådar</h2>
+          <div id="notes"></div>
+        </section>
+
+        <section class="card">
+          <h2>Spel</h2>
+          <p class="empty" id="moves">Drag: 0</p>
+          <button class="small-button" onclick="resetGame()">↻ Starta om</button>
+          <button class="small-button" onclick="toggleTests()" style="margin-top:8px; width:100%;">Visa test</button>
+          <div id="tests" style="display:none;"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const GAME_CODE = "388";
+
+    let scene = "start";
+    let inventory = [];
+    let notes = [];
+    let moves = 0;
+    let testsVisible = false;
+
+    function has(item) {
+      return inventory.includes(item);
+    }
+
+    function addItem(item) {
+      if (!inventory.includes(item)) inventory.push(item);
+    }
+
+    function addNote(note) {
+      if (!notes.includes(note)) notes.push(note);
+    }
+
+    function solveCodeFromClues() {
+      const triangleCorners = 3;
+      const numbers = [8, 11, 4];
+      const largestEvenBook = Math.max(...numbers.filter(number => number % 2 === 0));
+      const spiderLegs = 8;
+      return String(triangleCorners) + String(largestEvenBook) + String(spiderLegs);
+    }
+
+    function runTests() {
+      return [
+        { name: "Koden från ledtrådarna blir koden till nödutgången", passed: solveCodeFromClues() === GAME_CODE },
+        { name: "Fel kod ska inte räknas som rätt", passed: "381" !== GAME_CODE },
+        { name: "Koden ska ha tre siffror", passed: GAME_CODE.length === 3 && /^\d{3}$/.test(GAME_CODE) }
+      ];
+    }
+
+    function getScenes() {
+      return {
+        start: {
+          title: "TextEscape: Den låsta skolan",
+          icon: "🔒",
+          text: "Du är kvar i skolan efter stängning. Korridoren är tom. Lamporna blinkar. Högtalarna knastrar: ’Systemet är låst. Hitta huvudkoden innan midnatt.’",
+          choices: [
+            ["Gå till klassrum 4B", "klassrum"],
+            ["Gå till biblioteket", "bibliotek"],
+            ["Gå till matsalen", "matsal"],
+            ["Undersök nödutgången", "dod"]
+          ]
+        },
+        klassrum: {
+          title: "Klassrum 4B",
+          icon: "🔦",
+          text: "På tavlan står det: ’Första siffran är antalet hörn på en triangel.’ Under lärarens bord ligger en liten ficklampa.",
+          onEnter: function() {
+            addItem("ficklampa");
+            addNote("Första siffran = hörn på en triangel.");
+          },
+          choices: [
+            ["Tillbaka till korridoren", "start"],
+            ["Titta i bänkarna", "bankar"]
+          ]
+        },
+        bankar: {
+          title: "Bänkarna",
+          icon: "🗝️",
+          text: "I en bänk hittar du en liten silvernyckel. På nyckeln står det: ’PERSONAL’. Det verkar viktigt.",
+          onEnter: function() { addItem("silvernyckel"); },
+          choices: [["Tillbaka", "klassrum"]]
+        },
+        bibliotek: {
+          title: "Biblioteket",
+          icon: "📚",
+          text: has("ficklampa")
+            ? "Med ficklampan ser du något mellan bokhyllorna. Tre böcker sticker ut: 8, 11 och 4. På väggen står: ’Ta talet som är mitten av alla siffror.’"
+            : "Det är för mörkt för att se ordentligt här. Du behöver ljus.",
+          choices: has("ficklampa")
+            ? [["Dra ut bok 8", "bok8"], ["Dra ut bok 11", "felbok"], ["Dra ut bok 4", "felbok"], ["Tillbaka", "start"]]
+            : [["Tillbaka", "start"]]
+        },
+        bok8: {
+          title: "Hemlig bok",
+          icon: "🗝️",
+          text: "Boken klickar till. Bakom den ligger en lapp: ’Andra siffran är 8.’",
+          onEnter: function() { addNote("Andra siffran = 8."); },
+          choices: [["Tillbaka till korridoren", "start"]]
+        },
+        felbok: {
+          title: "Fel bok",
+          icon: "⚠️",
+          text: "Bokhyllan skakar till och en högtalare säger: ’Fel val.’ Inget farligt händer, men du tappade lite tid.",
+          choices: [["Försök igen", "bibliotek"], ["Tillbaka", "start"]]
+        },
+        matsal: {
+          title: "Matsalen",
+          icon: "🍽️",
+          text: "På ett bord står fyra tallrikar. Tre är vita och en är blå. På den blå står det: ’Sista siffran är antalet ben på en spindel.’",
+          onEnter: function() { addNote("Sista siffran = ben på en spindel."); },
+          choices: [["Tillbaka till korridoren", "start"], ["Titta bakom disken", "disk"]]
+        },
+        disk: {
+          title: "Bakom disken",
+          icon: "🗝️",
+          text: has("silvernyckel")
+            ? "Silvernyckeln passar i ett litet skåp. Där finns ett ID-kort till rektorns kontor."
+            : "Ett litet skåp är låst. Det står ’PERSONAL’ på låset.",
+          onEnter: function() {
+            if (has("silvernyckel")) addItem("ID-kort");
+          },
+          choices: [["Tillbaka", "matsal"]]
+        },
+        dod: {
+          title: "Nödutgången",
+          icon: "🚪",
+          text: has("ID-kort")
+            ? "Kortläsaren blinkar grönt. Nu krävs bara huvudkoden med tre siffror. Du har ledtrådarna i dina anteckningar."
+            : "Dörren har en kortläsare och ett kodlås. Du behöver ett ID-kort först.",
+          code: has("ID-kort"),
+          choices: [["Tillbaka", "start"]]
+        },
+        victory: {
+          title: "Du klarade det",
+          icon: "✅",
+          text: "Kodlåset piper tre gånger. Nödutgången öppnas. Du springer ut precis när skolans lampor slocknar bakom dig. I fickan vibrerar ID-kortet. På skärmen står: ’Nivå 2 upplåst.’",
+          choices: [["Spela igen", "RESET"]]
+        }
+      };
+    }
+
+    function render() {
+      const scenes = getScenes();
+      const current = scenes[scene] || scenes.start;
+
+      if (current.onEnter) current.onEnter();
+
+      document.getElementById("sceneIcon").textContent = current.icon;
+      document.getElementById("sceneTitle").textContent = current.title;
+      document.getElementById("sceneText").textContent = current.text;
+      document.getElementById("moves").textContent = "Drag: " + moves;
+
+      renderChoices(current.choices);
+      renderCodeBox(current.code);
+      renderInventory();
+      renderNotes();
+      renderTests();
+    }
+
+    function renderChoices(choices) {
+      const choicesElement = document.getElementById("choices");
+      choicesElement.innerHTML = "";
+
+      choices.forEach(function(choice) {
+        const button = document.createElement("button");
+        button.textContent = choice[0];
+        button.onclick = function() {
+          if (choice[1] === "RESET") {
+            resetGame();
+          } else {
+            moves++;
+            scene = choice[1];
+            render();
+          }
+        };
+        choicesElement.appendChild(button);
+      });
+    }
+
+    function renderCodeBox(showCodeBox) {
+      const codeBox = document.getElementById("codeBox");
+      codeBox.innerHTML = "";
+
+      if (!showCodeBox) return;
+
+      const box = document.createElement("div");
+      box.className = "code-box";
+      box.innerHTML = `
+        <strong>Ange huvudkoden:</strong>
+        <div class="code-row" style="margin-top:10px;">
+          <input id="codeInput" maxlength="3" inputmode="numeric" placeholder="___" />
+          <button onclick="submitCode()">Lås upp</button>
+        </div>
+        <div id="codeMessage" class="error"></div>
+      `;
+      codeBox.appendChild(box);
+    }
+
+    function submitCode() {
+      const input = document.getElementById("codeInput");
+      const message = document.getElementById("codeMessage");
+      const value = input.value.replace(/\D/g, "").slice(0, 3);
+      input.value = value;
+
+      if (value === GAME_CODE) {
+        scene = "victory";
+        moves++;
+        render();
+      } else {
+        message.textContent = "Fel kod. Kontrollera ledtrådarna igen.";
+      }
+    }
+
+    function renderInventory() {
+      const element = document.getElementById("inventory");
+      element.innerHTML = "";
+
+      if (inventory.length === 0) {
+        element.innerHTML = '<p class="empty">Inget än.</p>';
+        return;
+      }
+
+      inventory.forEach(function(item) {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.textContent = item;
+        element.appendChild(div);
+      });
+    }
+
+    function renderNotes() {
+      const element = document.getElementById("notes");
+      element.innerHTML = "";
+
+      if (notes.length === 0) {
+        element.innerHTML = '<p class="empty">Inga ledtrådar än.</p>';
+        return;
+      }
+
+      notes.forEach(function(note) {
+        const div = document.createElement("div");
+        div.className = "note";
+        div.textContent = note;
+        element.appendChild(div);
+      });
+    }
+
+    function toggleTests() {
+      testsVisible = !testsVisible;
+      renderTests();
+    }
+
+    function renderTests() {
+      const element = document.getElementById("tests");
+      element.style.display = testsVisible ? "block" : "none";
+      element.innerHTML = "";
+
+      if (!testsVisible) return;
+
+      runTests().forEach(function(test) {
+        const div = document.createElement("div");
+        div.className = "test";
+        div.innerHTML = '<span class="' + (test.passed ? 'pass' : 'fail') + '">' + (test.passed ? 'PASS' : 'FAIL') + '</span> ' + test.name;
+        element.appendChild(div);
+      });
+    }
+
+    function resetGame() {
+      scene = "start";
+      inventory = [];
+      notes = [];
+      moves = 0;
+      testsVisible = false;
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>
