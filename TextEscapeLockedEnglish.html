@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TextEscape - The Locked School</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #e5e7eb;
+      color: #0f172a;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .game {
+      width: 100%;
+      max-width: 1050px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+    }
+
+    .card {
+      background: white;
+      border: 2px solid #cbd5e1;
+      border-radius: 18px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+      padding: 22px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .icon {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      font-size: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 21px;
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.55;
+      margin: 0 0 18px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 15px 16px;
+      background: #0f172a;
+      color: white;
+      font-size: 16px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #334155;
+    }
+
+    .side {
+      display: grid;
+      gap: 16px;
+    }
+
+    .item, .note, .test {
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      font-size: 16px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .note {
+      background: #ecfeff;
+      border-color: #67e8f9;
+      font-weight: 600;
+    }
+
+    .empty {
+      color: #475569;
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .code-box {
+      background: #fffbeb;
+      border: 2px solid #fbbf24;
+      border-radius: 16px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    .code-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input {
+      width: 150px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px solid #0f172a;
+      font-size: 28px;
+      letter-spacing: 12px;
+      font-weight: bold;
+      color: #0f172a;
+      background: white;
+    }
+
+    .small-button {
+      background: white;
+      color: #0f172a;
+      border: 2px solid #0f172a;
+      text-align: center;
+      padding: 10px 12px;
+    }
+
+    .small-button:hover {
+      background: #f1f5f9;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .pass {
+      color: #15803d;
+      font-weight: bold;
+    }
+
+    .fail {
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    @media (max-width: 850px) {
+      .game {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <main class="game">
+      <section class="card">
+        <div class="title-row">
+          <span class="icon" id="sceneIcon">🔒</span>
+          <h1 id="sceneTitle">TextEscape</h1>
+        </div>
+        <p id="sceneText"></p>
+        <div id="codeBox"></div>
+        <div class="choices" id="choices"></div>
+      </section>
+
+      <aside class="side">
+        <section class="card">
+          <h2>🎒 Inventory</h2>
+          <div id="inventory"></div>
+        </section>
+
+        <section class="card">
+          <h2>🧩 Clues</h2>
+          <div id="notes"></div>
+        </section>
+
+        <section class="card">
+          <h2>Game</h2>
+          <p class="empty" id="moves">Moves: 0</p>
+          <button class="small-button" onclick="resetGame()">↻ Restart</button>
+          <button class="small-button" onclick="toggleTests()" style="margin-top:8px; width:100%;">Show tests</button>
+          <div id="tests" style="display:none;"></div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+<script>
+const GAME_CODE = "388";
+
+let scene = "start";
+let inventory = [];
+let notes = [];
+let moves = 0;
+let testsVisible = false;
+
+function has(item) {
+  return inventory.includes(item);
+}
+
+function addItem(item) {
+  if (!inventory.includes(item)) inventory.push(item);
+}
+
+function addNote(note) {
+  if (!notes.includes(note)) notes.push(note);
+}
+
+function solveCodeFromClues() {
+  const triangleCorners = 3;
+  const numbers = [8, 11, 4];
+  const largestEvenBook = Math.max(...numbers.filter(n => n % 2 === 0));
+  const spiderLegs = 8;
+  return String(triangleCorners) + String(largestEvenBook) + String(spiderLegs);
+}
+
+function runTests() {
+  return [
+    { name: "Clue code matches escape code", passed: solveCodeFromClues() === GAME_CODE },
+    { name: "Wrong code should not pass", passed: "381" !== GAME_CODE },
+    { name: "Code must be 3 digits", passed: GAME_CODE.length === 3 && /^\d{3}$/.test(GAME_CODE) }
+  ];
+}
+
+function getScenes() {
+  return {
+    start: {
+      title: "TextEscape: The Locked School",
+      icon: "🔒",
+      text: "You are stuck in school after closing time. The hallway is empty. Lights are flickering. The speakers crackle: 'System locked. Find the master code before midnight.'",
+      choices: [
+        ["Go to Classroom 4B", "klassrum"],
+        ["Go to the Library", "bibliotek"],
+        ["Go to the Cafeteria", "matsal"],
+        ["Inspect the Emergency Exit", "dod"]
+      ]
+    },
+
+    klassrum: {
+      title: "Classroom 4B",
+      icon: "🔦",
+      text: "On the board it says: 'The first digit is the number of corners in a triangle.' Under the teacher's desk is a small flashlight.",
+      onEnter: function() {
+        addItem("flashlight");
+        addNote("First digit = triangle corners.");
+      },
+      choices: [
+        ["Back to hallway", "start"],
+        ["Check desks", "bankar"]
+      ]
+    },
+
+    bankar: {
+      title: "Desks",
+      icon: "🗝️",
+      text: "Inside a desk you find a small silver key. It says: 'STAFF'. It seems important.",
+      onEnter: function() { addItem("silver_key"); },
+      choices: [["Back", "klassrum"]]
+    },
+
+    bibliotek: {
+      title: "Library",
+      icon: "📚",
+      text: has("flashlight")
+        ? "With the flashlight you see something between the shelves. Three books stand out: 8, 11, and 4."
+        : "It is too dark to see anything. You need light.",
+      choices: has("flashlight")
+        ? [["Pull book 8", "bok8"], ["Pull book 11", "wrongbook"], ["Pull book 4", "wrongbook"], ["Back", "start"]]
+        : [["Back", "start"]]
+    },
+
+    bok8: {
+      title: "Hidden Book",
+      icon: "🗝️",
+      text: "The book clicks. Inside is a note: 'The second digit is 8.'",
+      onEnter: function() { addNote("Second digit = 8."); },
+      choices: [["Back to hallway", "start"]]
+    },
+
+    wrongbook: {
+      title: "Wrong Book",
+      icon: "⚠️",
+      text: "A speaker says: 'Wrong choice.' Nothing bad happens, but you lost time.",
+      choices: [["Try again", "bibliotek"], ["Back", "start"]]
+    },
+
+    matsal: {
+      title: "Cafeteria",
+      icon: "🍽️",
+      text: "On a table are four plates. One is blue. It says: 'The last digit is the number of legs on a spider.'",
+      onEnter: function() { addNote("Last digit = spider legs."); },
+      choices: [["Back", "start"], ["Check behind counter", "disk"]]
+    },
+
+    disk: {
+      title: "Behind Counter",
+      icon: "🗝️",
+      text: has("silver_key")
+        ? "The silver key opens a locker. Inside is an ID card."
+        : "A locked locker says 'STAFF'.",
+      onEnter: function() {
+        if (has("silver_key")) addItem("ID_card");
+      },
+      choices: [["Back", "matsal"]]
+    },
+
+    dod: {
+      title: "Emergency Exit",
+      icon: "🚪",
+      text: has("ID_card")
+        ? "The scanner turns green. Now you need the 3-digit master code."
+        : "You need an ID card first.",
+      code: has("ID_card"),
+      choices: [["Back", "start"]]
+    },
+
+    victory: {
+      title: "You Escaped",
+      icon: "✅",
+      text: "The lock beeps. The door opens. You escape just before the lights go out.",
+      choices: [["Play again", "RESET"]]
+    }
+  };
+}
+
+function render() {
+  const scenes = getScenes();
+  const current = scenes[scene] || scenes.start;
+
+  if (current.onEnter) current.onEnter();
+
+  document.getElementById("sceneIcon").textContent = current.icon;
+  document.getElementById("sceneTitle").textContent = current.title;
+  document.getElementById("sceneText").textContent = current.text;
+  document.getElementById("moves").textContent = "Moves: " + moves;
+
+  renderChoices(current.choices);
+  renderCodeBox(current.code);
+  renderInventory();
+  renderNotes();
+  renderTests();
+}
+
+function renderChoices(choices) {
+  const el = document.getElementById("choices");
+  el.innerHTML = "";
+
+  choices.forEach(c => {
+    const b = document.createElement("button");
+    b.textContent = c[0];
+    b.onclick = () => {
+      if (c[1] === "RESET") resetGame();
+      else {
+        moves++;
+        scene = c[1];
+        render();
+      }
+    };
+    el.appendChild(b);
+  });
+}
+
+function renderCodeBox(show) {
+  const box = document.getElementById("codeBox");
+  box.innerHTML = "";
+  if (!show) return;
+
+  box.innerHTML = `
+    <div class="code-box">
+      <strong>Enter master code:</strong>
+      <div class="code-row">
+        <input id="codeInput" maxlength="3" inputmode="numeric" placeholder="___" />
+        <button onclick="submitCode()">Unlock</button>
+      </div>
+      <div id="codeMessage" class="error"></div>
+    </div>
+  `;
+}
+
+function submitCode() {
+  const input = document.getElementById("codeInput");
+  const msg = document.getElementById("codeMessage");
+  const val = input.value.replace(/\D/g, "").slice(0, 3);
+
+  if (val === GAME_CODE) {
+    scene = "victory";
+    moves++;
+    render();
+  } else {
+    msg.textContent = "Wrong code. Check clues again.";
+  }
+}
+
+function renderInventory() {
+  const el = document.getElementById("inventory");
+  el.innerHTML = inventory.length ? inventory.map(i => `<div class="item">${i}</div>`).join("") : "<p class='empty'>Nothing yet.</p>";
+}
+
+function renderNotes() {
+  const el = document.getElementById("notes");
+  el.innerHTML = notes.length ? notes.map(n => `<div class="note">${n}</div>`).join("") : "<p class='empty'>No clues yet.</p>";
+}
+
+function toggleTests() {
+  testsVisible = !testsVisible;
+  renderTests();
+}
+
+function renderTests() {
+  const el = document.getElementById("tests");
+  el.style.display = testsVisible ? "block" : "none";
+  if (!testsVisible) return;
+
+  el.innerHTML = runTests().map(t =>
+    `<div class="test"><span class="${t.passed ? "pass" : "fail"}">${t.passed ? "PASS" : "FAIL"}</span> ${t.name}</div>`
+  ).join("");
+}
+
+function resetGame() {
+  scene = "start";
+  inventory = [];
+  notes = [];
+  moves = 0;
+  testsVisible = false;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
