@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TextEscape: AI Lockdown</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#0f172a;
+    color:white;
+    margin:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+.game{
+    width:90%;
+    max-width:800px;
+    background:#1e293b;
+    padding:25px;
+    border-radius:20px;
+    border:2px solid #334155;
+}
+
+h1{
+    margin-top:0;
+}
+
+#text{
+    line-height:1.6;
+    margin-bottom:20px;
+}
+
+#choices{
+    display:grid;
+    gap:10px;
+}
+
+button{
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:#2563eb;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+#inventory{
+    margin-top:20px;
+    padding-top:20px;
+    border-top:1px solid #475569;
+}
+</style>
+</head>
+<body>
+
+<div class="game">
+    <h1 id="title">TextEscape: AI Lockdown</h1>
+
+    <div id="text"></div>
+
+    <div id="choices"></div>
+
+    <div id="inventory">
+        <strong>Inventarie:</strong>
+        <div id="items">Tom</div>
+    </div>
+</div>
+
+<script>
+
+let inventory = [];
+
+function hasItem(item){
+    return inventory.includes(item);
+}
+
+function addItem(item){
+    if(!inventory.includes(item)){
+        inventory.push(item);
+    }
+    updateInventory();
+}
+
+function updateInventory(){
+    document.getElementById("items").textContent =
+        inventory.length ? inventory.join(", ") : "Tom";
+}
+
+const scenes = {
+
+start:{
+title:"TextEscape: AI Lockdown",
+text:`
+Du öppnar ögonen.
+
+Vita väggar.
+
+En låst dörr.
+
+En kamera i taket följer varje rörelse.
+
+Plötsligt tänds en skärm.
+
+"God morgon, testperson."
+
+"Jag är AURA."
+
+"Anläggningen är nu i nedstängningsläge."
+
+"Flykt rekommenderas inte."
+`,
+choices:[
+["🚪 Undersök dörren","door"],
+["🖥️ Undersök skärmen","screen"],
+["🛏️ Titta under sängen","bed"]
+]
+},
+
+door:{
+title:"Dörren",
+text: hasItem("Nivå 1-kort")
+? `
+Kortläsaren blinkar grönt.
+
+Dörren öppnas långsamt.
+
+AURA:
+"Intressant."
+
+"Du tog dig ut snabbare än väntat."
+
+GRATTIS!
+Du har klarat första delen.
+`
+: `
+Dörren är låst.
+
+Bredvid handtaget sitter en kortläsare.
+
+En röd lampa blinkar.
+
+AURA:
+"Åtkomst nekad."
+`,
+choices:[
+["⬅ Tillbaka","start"]
+]
+},
+
+screen:{
+title:"Skärmen",
+text:`
+Skärmen visar en karta över anläggningen.
+
+Nästan alla områden är markerade:
+
+LÅSTA
+
+AURA:
+"Det finns ingen anledning att lämna testområdet."
+`,
+choices:[
+["⬅ Tillbaka","start"]
+]
+},
+
+bed:{
+title:"Under sängen",
+text: hasItem("Nivå 1-kort")
+? `
+Du har redan tagit nyckelkortet.
+`
+: `
+Du hittar ett gammalt nyckelkort.
+
+På kortet står:
+
+NIVÅ 1
+
+Du plockar upp det.
+`,
+onEnter:function(){
+addItem("Nivå 1-kort");
+},
+choices:[
+["⬅ Tillbaka","start"]
+]
+}
+
+};
+
+function loadScene(sceneName){
+
+const scene = scenes[sceneName];
+
+if(scene.onEnter){
+scene.onEnter();
+scene.onEnter = null;
+}
+
+document.getElementById("title").textContent = scene.title;
+document.getElementById("text").innerText = scene.text;
+
+const choices = document.getElementById("choices");
+choices.innerHTML = "";
+
+scene.choices.forEach(choice=>{
+const button = document.createElement("button");
+button.textContent = choice[0];
+button.onclick = ()=>loadScene(choice[1]);
+choices.appendChild(button);
+});
+
+}
+
+updateInventory();
+loadScene("start");
+
+</script>
+
+</body>
+</html>
