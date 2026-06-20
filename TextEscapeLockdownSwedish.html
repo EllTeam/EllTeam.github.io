@@ -26,13 +26,12 @@ body{
     border:2px solid #334155;
 }
 
-h1{
-    margin-top:0;
-}
+h1{ margin-top:0; }
 
 #text{
     line-height:1.6;
     margin-bottom:20px;
+    white-space: pre-line;
 }
 
 #choices{
@@ -128,8 +127,9 @@ choices:[
 
 door:{
 title:"Dörren",
-text: hasItem("Nivå 1-kort")
-? `
+text: function(){
+    if(hasItem("Nivå 1-kort")){
+        return `
 Kortläsaren blinkar grönt.
 
 Dörren öppnas långsamt.
@@ -140,9 +140,10 @@ AURA:
 "Du tog dig ut snabbare än väntat."
 
 GRATTIS!
-Du har klarat första delen.
-`
-: `
+`;
+    }
+
+    return `
 Dörren är låst.
 
 Bredvid handtaget sitter en kortläsare.
@@ -151,7 +152,8 @@ En röd lampa blinkar.
 
 AURA:
 "Åtkomst nekad."
-`,
+`;
+},
 choices:[
 ["⬅ Tillbaka","start"]
 ]
@@ -176,11 +178,12 @@ choices:[
 
 bed:{
 title:"Under sängen",
-text: hasItem("Nivå 1-kort")
-? `
-Du har redan tagit nyckelkortet.
-`
-: `
+text: function(){
+    if(hasItem("Nivå 1-kort")){
+        return "Du har redan tagit nyckelkortet.";
+    }
+
+    return `
 Du hittar ett gammalt nyckelkort.
 
 På kortet står:
@@ -188,9 +191,10 @@ På kortet står:
 NIVÅ 1
 
 Du plockar upp det.
-`,
+`;
+},
 onEnter:function(){
-addItem("Nivå 1-kort");
+    addItem("Nivå 1-kort");
 },
 choices:[
 ["⬅ Tillbaka","start"]
@@ -209,7 +213,11 @@ scene.onEnter = null;
 }
 
 document.getElementById("title").textContent = scene.title;
-document.getElementById("text").innerText = scene.text;
+
+document.getElementById("text").innerText =
+typeof scene.text === "function"
+? scene.text()
+: scene.text;
 
 const choices = document.getElementById("choices");
 choices.innerHTML = "";
