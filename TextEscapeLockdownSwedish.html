@@ -179,19 +179,7 @@ choices:[
 bed:{
 title:"Under sängen",
 text: function(){
-    if(hasItem("Nivå 1-kort")){
-        return "Du har redan tagit nyckelkortet.";
-    }
-
-    return `
-Du hittar ett gammalt nyckelkort.
-
-På kortet står:
-
-NIVÅ 1
-
-Du plockar upp det.
-`;
+    return "Du hittar ett gammalt kort. På kortet står det: Nivå 1"
 },
 onEnter:function(){
     addItem("Nivå 1-kort");
